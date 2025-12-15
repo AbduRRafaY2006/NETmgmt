@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Portal - NET</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Student Portal</h1>
+            <div class="header-actions">
+                <a href="/" class="btn btn-sm">Home</a>
+            </div>
+        </header>
+
+        <div id="loginSection" class="section">
+            <div class="card">
+                <h2>Student Login / Registration</h2>
+                <div class="tabs">
+                    <button class="tab-btn active" onclick="showTab('login')">Login</button>
+                    <button class="tab-btn" onclick="showTab('register')">Register</button>
+                </div>
+
+                <!-- Login Form -->
+                <div id="loginForm" class="tab-content active">
+                    <form onsubmit="studentLogin(event)">
+                        <div class="form-group">
+                            <label>CNIC (e.g., 12345-1234567-1)</label>
+                            <input type="text" id="loginCnic" required pattern="[0-9]{5}-[0-9]{7}-[0-9]{1}">
+                        </div>
+                        <button type="submit" class="btn btn-primary">Login</button>
+                    </form>
+                </div>
+
+                <!-- Registration Form -->
+                <div id="registerForm" class="tab-content">
+                    <form onsubmit="registerStudent(event)">
+                        <h3>Personal Information</h3>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>CNIC*</label>
+                                <input type="text" name="cnic" required pattern="[0-9]{5}-[0-9]{7}-[0-9]{1}" 
+                                       placeholder="12345-1234567-1">
+                            </div>
+                            <div class="form-group">
+                                <label>Marital Status*</label>
+                                <select name="maritalStatus" required>
+                                    <option value="">Select</option>
+                                    <option value="Single">Single</option>
+                                    <option value="Married">Married</option>
+                                    <option value="Divorced">Divorced</option>
+                                    <option value="Widowed">Widowed</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>First Name*</label>
+                                <input type="text" name="firstName" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Middle Name</label>
+                                <input type="text" name="midName">
+                            </div>
+                            <div class="form-group">
+                                <label>Last Name*</label>
+                                <input type="text" name="lastName" required>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Address*</label>
+                            <textarea name="address" rows="2" required></textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Academic Background*</label>
+                            <select name="backgroundId" id="backgroundSelect" required>
+                                <option value="">Select Background</option>
+                            </select>
+                        </div>
+
+                        <h3>Father's Information</h3>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Father's Name*</label>
+                                <input type="text" name="fatherName" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Father's CNIC*</label>
+                                <input type="text" name="fatherCnic" required pattern="[0-9]{5}-[0-9]{7}-[0-9]{1}">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Occupation</label>
+                                <input type="text" name="fatherOccupation">
+                            </div>
+                            <div class="form-group">
+                                <label>Status*</label>
+                                <select name="fatherStatus" required>
+                                    <option value="Alive">Alive</option>
+                                    <option value="Deceased">Deceased</option>
+                                    <option value="Shaheed">Shaheed</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <h3>Mother's Information</h3>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Mother's Name*</label>
+                                <input type="text" name="motherName" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Mother's CNIC*</label>
+                                <input type="text" name="motherCnic" required pattern="[0-9]{5}-[0-9]{7}-[0-9]{1}">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Occupation</label>
+                                <input type="text" name="motherOccupation">
+                            </div>
+                            <div class="form-group">
+                                <label>Status*</label>
+                                <select name="motherStatus" required>
+                                    <option value="Alive">Alive</option>
+                                    <option value="Deceased">Deceased</option>
+                                    <option value="Shaheed">Shaheed</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary">Register</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div id="dashboardSection" class="section" style="display: none;">
+            <div class="dashboard-header">
+                <h2>Welcome, <span id="studentName"></span></h2>
+                <button onclick="logout()" class="btn btn-sm btn-secondary">Logout</button>
+            </div>
+
+            <div class="dashboard-stats">
+                <div class="stat-card">
+                    <div class="stat-label">Student ID</div>
+                    <div class="stat-value" id="studentIdDisplay"></div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">CNIC</div>
+                    <div class="stat-value" id="studentCnic"></div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Background</div>
+                    <div class="stat-value" id="studentBackground"></div>
+                </div>
+            </div>
+
+            <div class="tabs">
+                <button class="tab-btn active" onclick="showDashTab('enroll')">Enroll in Series</button>
+                <button class="tab-btn" onclick="showDashTab('apply')">Apply for Test</button>
+                <button class="tab-btn" onclick="showDashTab('mytests')">My Tests</button>
+            </div>
+
+            <!-- Enroll Tab -->
+            <div id="enrollTab" class="tab-content active">
+                <div class="card">
+                    <h3>Enroll in Test Series</h3>
+                    <form onsubmit="enrollStudent(event)">
+                        <div class="form-group">
+                            <label>Select Series</label>
+                            <select id="seriesSelect" required>
+                                <option value="">Choose a series</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Enroll</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Apply Tab -->
+            <div id="applyTab" class="tab-content">
+                <div class="card">
+                    <h3>Apply for Entry Test</h3>
+                    <form onsubmit="applyForTest(event)">
+                        <div class="form-group">
+                            <label>Select Series</label>
+                            <select id="applySeriesSelect" onchange="loadEligibleTests()" required>
+                                <option value="">Choose a series</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Select Test Type</label>
+                            <select id="testTypeSelect" onchange="loadAvailableDurations()" required>
+                                <option value="">Choose test type</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Select Date & Time</label>
+                            <select id="durationSelect" required>
+                                <option value="">Choose date & time</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Apply</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- My Tests Tab -->
+            <div id="mytestsTab" class="tab-content">
+                <div class="card">
+                    <h3>My Test Applications</h3>
+                    <div id="myTestsList"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="messageBox" class="message-box"></div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

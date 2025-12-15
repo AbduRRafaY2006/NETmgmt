@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel - NET</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Admin Panel</h1>
+            <div class="header-actions">
+                <a href="/" class="btn btn-sm">Home</a>
+                <button id="logoutBtn" onclick="adminLogout()" class="btn btn-sm btn-secondary" style="display:none;">Logout</button>
+            </div>
+        </header>
+
+        <!-- Login Section -->
+        <div id="adminLoginSection" class="section">
+            <div class="card login-card">
+                <h2>Admin Login</h2>
+                <form onsubmit="adminLogin(event)">
+                    <div class="form-group">
+                        <label>Username</label>
+                        <input type="text" id="adminUsername" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Password</label>
+                        <input type="password" id="adminPassword" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Login</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Dashboard Section -->
+        <div id="adminDashboard" style="display: none;">
+            <!-- Statistics Cards -->
+            <div class="dashboard-stats">
+                <div class="stat-card">
+                    <div class="stat-label">Total Students</div>
+                    <div class="stat-value" id="totalStudents">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Total Tests</div>
+                    <div class="stat-value" id="totalTests">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Active Series</div>
+                    <div class="stat-value" id="totalSeries">0</div>
+                </div>
+            </div>
+
+            <!-- Tabs -->
+            <div class="tabs">
+                <button class="tab-btn active" onclick="showAdminTab('students')">Students</button>
+                <button class="tab-btn" onclick="showAdminTab('tests')">Student Tests</button>
+                <button class="tab-btn" onclick="showAdminTab('analytics')">Analytics</button>
+            </div>
+
+            <!-- Students Tab -->
+            <div id="studentsTab" class="tab-content active">
+                <div class="card">
+                    <div class="card-header">
+                        <h3>All Students</h3>
+                        <input type="text" id="studentSearch" placeholder="Search by name or CNIC..." onkeyup="filterStudents()">
+                    </div>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Name</th>
+                                    <th>CNIC</th>
+                                    <th>Background</th>
+                                    <th>Marital Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="studentsTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tests Tab -->
+            <div id="testsTab" class="tab-content">
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Student Test Applications</h3>
+                        <input type="text" id="testSearch" placeholder="Search..." onkeyup="filterTests()">
+                    </div>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Test ID</th>
+                                    <th>Student Name</th>
+                                    <th>CNIC</th>
+                                    <th>Test Type</th>
+                                    <th>Date</th>
+                                    <th>Time Slot</th>
+                                    <th>Series</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="testsTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Analytics Tab -->
+            <div id="analyticsTab" class="tab-content">
+                <div class="analytics-grid">
+                    <div class="card">
+                        <h3>Students by Background</h3>
+                        <div id="backgroundChart" class="chart"></div>
+                    </div>
+                    <div class="card">
+                        <h3>Tests by Type</h3>
+                        <div id="testTypeChart" class="chart"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Student Detail Modal -->
+        <div id="studentModal" class="modal">
+            <div class="modal-content">
+                <span class="close" onclick="closeModal('studentModal')">&times;</span>
+                <h2>Student Details</h2>
+                <div id="studentDetails"></div>
+            </div>
+        </div>
+
+        <div id="messageBox" class="message-box"></div>
+    </div>
+
+    <script>
+        let currentStudent = null;
+        let allStudents = [];
+        let allTests = [];
+
+        async function adminLogin(e) {
+            e.preventDefault();
+            const username = document.getElementById('adminUsername').value;
+            const password = document.getElementById('adminPassword').value;
+
+            const response = await fetch('/api/admin/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
+            });
+
+            const data = await response.json();
+            if (data.success) {
+                document.getElementById('adminLoginSection').style.display = 'none';
+                document.getElementById('adminDashboard').style.display = 'block';
+                document.getElementById('logoutBtn').style.display = 'block';
+                loadAdminData();
+                showMessage('Login successful', 'success');
+            } else {
+                showMessage(data.message, 'error');
+            }
+        }
+
+        function adminLogout() {
+            document.getElementById('adminLoginSection').style.display = 'block';
+            document.getElementById('adminDashboard').style.display = 'none';
+            document.getElementById('logoutBtn').style.display = 'none';
+            document.getElementById('adminUsername').value = '';
+            document.getElementById('adminPassword').value = '';
+        }
+
+        async function loadAdminData() {
+            await loadStatistics();
+            await loadStudents();
+            await loadTests();
+        }
+
+        async function loadStatistics() {
+            const response = await fetch('/api/admin/statistics');
+            const data = await response.json();
+            if (data.success) {
+                document.getElementById('totalStudents').textContent = data.stats.totalStudents;
+                document.getElementById('totalTests').textContent = data.stats.totalTests;
+                document.getElementById('totalSeries').textContent = data.stats.totalSeries;
+                
+                renderCharts(data.stats);
+            }
+        }
+
+        async function loadStudents() {
+            const response = await fetch('/api/admin/students');
+            const data = await response.json();
+            if (data.success) {
+                allStudents = data.students;
+                renderStudents(allStudents);
+            }
+        }
+
+        function renderStudents(students) {
+            const tbody = document.getElementById('studentsTableBody');
+            tbody.innerHTML = students.map(s => `
+                <tr>
+                    <td>${s.StudentID}</td>
+                    <td>${s.firstName} ${s.midName || ''} ${s.lastName}</td>
+                    <td>${s.cnic}</td>
+                    <td>${s.backgroundName || 'N/A'}</td>
+                    <td>${s.maritalStatus}</td>
+                    <td>
+                        <button class="btn btn-sm" onclick="viewStudent(${s.StudentID})">View</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        async function viewStudent(studentId) {
+            const response = await fetch(`/api/admin/students/${studentId}`);
+            const data = await response.json();
+            if (data.success) {
+                const details = document.getElementById('studentDetails');
+                details.innerHTML = `
+                    <div class="detail-section">
+                        <h3>Personal Information</h3>
+                        <p><strong>Name:</strong> ${data.student.firstName} ${data.student.midName || ''} ${data.student.lastName}</p>
+                        <p><strong>CNIC:</strong> ${data.student.cnic}</p>
+                        <p><strong>Marital Status:</strong> ${data.student.maritalStatus}</p>
+                        <p><strong>Background:</strong> ${data.student.backgroundName}</p>
+                        <p><strong>Address:</strong> ${data.student.address}</p>
+                    </div>
+
+                    <div class="detail-section">
+                        <h3>Parents Information</h3>
+                        ${data.parents.map(p => `
+                            <div class="parent-info">
+                                <p><strong>${p.parentType}:</strong> ${p.parentName}</p>
+                                <p><strong>CNIC:</strong> ${p.cnic}</p>
+                                <p><strong>Occupation:</strong> ${p.occupation || 'N/A'}</p>
+                                <p><strong>Status:</strong> ${p.status}</p>
+                            </div>
+                        `).join('')}
+                    </div>
+
+                    <div class="detail-section">
+                        <h3>Test Applications</h3>
+                        ${data.tests.length > 0 ? `
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Test Type</th>
+                                        <th>Date</th>
+                                        <th>Time</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${data.tests.map(t => `
+                                        <tr>
+                                            <td>${t.testType}</td>
+                                            <td>${new Date(t.testDate).toLocaleDateString()}</td>
+                                            <td>${t.timeSlot}</td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        ` : '<p>No test applications yet</p>'}
+                    </div>
+                `;
+                document.getElementById('studentModal').style.display = 'block';
+            }
+        }
+
+        async function loadTests() {
+            const response = await fetch('/api/admin/tests');
+            const data = await response.json();
+            if (data.success) {
+                allTests = data.tests;
+                renderTests(allTests);
+            }
+        }
+
+        function renderTests(tests) {
+            const tbody = document.getElementById('testsTableBody');
+            tbody.innerHTML = tests.map(t => `
+                <tr>
+                    <td>${t.StudentTestID}</td>
+                    <td>${t.fullName}</td>
+                    <td>${t.cnic}</td>
+                    <td>${t.testType}</td>
+                    <td>${new Date(t.testDate).toLocaleDateString()}</td>
+                    <td>${t.timeSlot}</td>
+                    <td>${t.series}</td>
+                    <td>
+                        <button class="btn btn-sm btn-danger" onclick="deleteTest(${t.StudentTestID})">Delete</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        async function deleteTest(testId) {
+            if (!confirm('Are you sure you want to delete this test application?')) return;
+            
+            const response = await fetch(`/api/admin/tests/${testId}`, { method: 'DELETE' });
+            const data = await response.json();
+            if (data.success) {
+                showMessage('Test deleted successfully', 'success');
+                loadTests();
+                loadStatistics();
+            }
+        }
+
+        function renderCharts(stats) {
+            // Background chart
+            const bgChart = document.getElementById('backgroundChart');
+            bgChart.innerHTML = stats.byBackground.map(b => `
+                <div class="chart-bar">
+                    <div class="chart-label">${b.Name}</div>
+                    <div class="chart-bar-fill" style="width: ${(b.count / stats.totalStudents * 100) || 0}%"></div>
+                    <div class="chart-value">${b.count}</div>
+                </div>
+            `).join('');
+
+            // Test type chart
+            const ttChart = document.getElementById('testTypeChart');
+            ttChart.innerHTML = stats.byTestType.map(t => `
+                <div class="chart-bar">
+                    <div class="chart-label">${t.Name}</div>
+                    <div class="chart-bar-fill" style="width: ${(t.count / stats.totalTests * 100) || 0}%"></div>
+                    <div class="chart-value">${t.count}</div>
+                </div>
+            `).join('');
+        }
+
+        function filterStudents() {
+            const search = document.getElementById('studentSearch').value.toLowerCase();
+            const filtered = allStudents.filter(s => 
+                s.firstName.toLowerCase().includes(search) ||
+                s.lastName.toLowerCase().includes(search) ||
+                s.cnic.includes(search)
+            );
+            renderStudents(filtered);
+        }
+
+        function filterTests() {
+            const search = document.getElementById('testSearch').value.toLowerCase();
+            const filtered = allTests.filter(t => 
+                t.fullName.toLowerCase().includes(search) ||
+                t.cnic.includes(search) ||
+                t.testType.toLowerCase().includes(search)
+            );
+            renderTests(filtered);
+        }
+
+        function showAdminTab(tab) {
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            
+            event.target.classList.add('active');
+            document.getElementById(tab + 'Tab').classList.add('active');
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
+
+        function showMessage(message, type) {
+            const box = document.getElementById('messageBox');
+            box.textContent = message;
+            box.className = 'message-box show ' + type;
+            setTimeout(() => box.classList.remove('show'), 3000);
+        }
+
+        window.onclick = function(event) {
+            if (event.target.classList.contains('modal')) {
+                event.target.style.display = 'none';
+            }
+        }
+    </script>
+</body>
+</html>
