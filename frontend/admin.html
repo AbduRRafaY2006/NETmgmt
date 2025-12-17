@@ -223,8 +223,19 @@
             if (data.success) {
                 const details = document.getElementById('studentDetails');
                 details.innerHTML = `
+                    <div class="detail-section" style="text-align:center;margin-bottom:30px;">
+                        <img id="adminViewPhoto" src="/api/student/photo/${studentId}" 
+                             style="width:150px;height:150px;object-fit:cover;border-radius:50%;border:4px solid #667eea;box-shadow:0 4px 12px rgba(102,126,234,0.3);"
+                             onerror="this.style.display='none';document.getElementById('noPhotoPlaceholder').style.display='block';">
+                        <div id="noPhotoPlaceholder" style="display:none;width:150px;height:150px;margin:0 auto;background:#f0f0f0;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:60px;border:4px solid #ddd;">
+                            📷
+                        </div>
+                        <p style="margin-top:10px;color:#666;font-size:14px;">Student Photo</p>
+                    </div>
+
                     <div class="detail-section">
                         <h3>Personal Information</h3>
+                        <p><strong>Student ID:</strong> ${data.student.StudentID}</p>
                         <p><strong>Name:</strong> ${data.student.firstName} ${data.student.midName || ''} ${data.student.lastName}</p>
                         <p><strong>CNIC:</strong> ${data.student.cnic}</p>
                         <p><strong>Marital Status:</strong> ${data.student.maritalStatus}</p>
@@ -234,20 +245,27 @@
 
                     <div class="detail-section">
                         <h3>Parents Information</h3>
-                        ${data.parents.map(p => `
+                        ${data.parents.length > 0 ? data.parents.map(p => `
                             <div class="parent-info">
                                 <p><strong>${p.parentType}:</strong> ${p.parentName}</p>
                                 <p><strong>CNIC:</strong> ${p.cnic}</p>
                                 <p><strong>Occupation:</strong> ${p.occupation || 'N/A'}</p>
                                 <p><strong>Status:</strong> ${p.status}</p>
                             </div>
-                        `).join('')}
+                        `).join('') : '<p>No parent information available</p>'}
+                    </div>
+
+                    <div class="detail-section">
+                        <h3>Enrolled Series</h3>
+                        ${data.enrollments.length > 0 ? 
+                            '<ul>' + data.enrollments.map(e => `<li>${e.TimeWindow}</li>`).join('') + '</ul>' 
+                            : '<p>Not enrolled in any series yet</p>'}
                     </div>
 
                     <div class="detail-section">
                         <h3>Test Applications</h3>
                         ${data.tests.length > 0 ? `
-                            <table>
+                            <table style="width:100%;">
                                 <thead>
                                     <tr>
                                         <th>Test Type</th>

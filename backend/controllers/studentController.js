@@ -126,6 +126,66 @@ exports.registerStudent = async (req, res) => {
         connection.release();
     }
 };
+exports.uploadPhoto = async (req, res) => {
+    try {
+        const { studentId } = req.body;
+        
+        if (!req.file) {
+            return res.json({ success: false, message: 'No photo uploaded' });
+        }
+
+        // Check file size (2MB limit as per schema)
+        if (req.file.size > 2097152) {
+            return res.json({ success: false, message: 'Photo size must be less than 2MB' });
+        }
+
+        // Check if photo already exists for this student
+        const [existing] = await db.query(
+            'SELECT photoID FROM StudentPhoto WHERE StudentID = ?',
+            [studentId]
+        );
+
+        if (existing.length > 0) {
+            // Update existing photo
+            await db.query(
+                'UPDATE StudentPhoto SET photo = ? WHERE StudentID = ?',
+                [req.file.buffer, studentId]
+            );
+        } else {
+            // Insert new photo
+            await db.query(
+                'INSERT INTO StudentPhoto (StudentID, photo) VALUES (?, ?)',
+                [studentId, req.file.buffer]
+            );
+        }
+
+        res.json({ success: true, message: 'Photo uploaded successfully' });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+// Get student photo
+exports.getStudentPhoto = async (req, res) => {
+    try {
+        const { studentId } = req.params;
+        
+        const [rows] = await db.query(
+            'SELECT photo FROM StudentPhoto WHERE StudentID = ?',
+            [studentId]
+        );
+
+        if (rows.length === 0 || !rows[0].photo) {
+            return res.status(404).json({ success: false, message: 'Photo not found' });
+        }
+
+        // Send image
+        res.contentType('image/jpeg');
+        res.send(rows[0].photo);
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
 
 // Enroll student in series
 exports.enrollInSeries = async (req, res) => {
@@ -244,3 +304,4 @@ exports.getSeriesCities = async (req, res) => {
         res.status(500).json({ success: false, message: error.message });
     }
 };
+

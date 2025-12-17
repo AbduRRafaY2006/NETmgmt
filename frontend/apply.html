@@ -160,16 +160,37 @@
                     <div class="stat-label">Background</div>
                     <div class="stat-value" id="studentBackground"></div>
                 </div>
+                <div class="stat-card photo-card">
+                    <div class="stat-label">Photo</div>
+                    <img id="studentPhoto" src="" alt="No photo" style="width:80px;height:80px;object-fit:cover;border-radius:50%;display:none;">
+                    <div id="noPhoto" style="font-size:40px;">📷</div>
+                </div>
             </div>
 
             <div class="tabs">
-                <button class="tab-btn active" onclick="showDashTab('enroll')">Enroll in Series</button>
+                <button class="tab-btn" onclick="showDashTab('enroll')">Enroll in Series</button>
                 <button class="tab-btn" onclick="showDashTab('apply')">Apply for Test</button>
                 <button class="tab-btn" onclick="showDashTab('mytests')">My Tests</button>
             </div>
 
+            <!-- Photo Upload Tab -->
+            <div id="photoTab" class="tab-content active">
+                <div class="card">
+                    <h3>Upload Your Photo</h3>
+                    <p class="info-text">Please upload a recent passport-size photo (Max 2MB, JPG/PNG)</p>
+                    <form onsubmit="uploadPhoto(event)">
+                        <div class="form-group">
+                            <label>Select Photo</label>
+                            <input type="file" id="photoInput" accept="image/*" required>
+                            <div id="photoPreview" style="margin-top:15px;"></div>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Upload Photo</button>
+                    </form>
+                </div>
+            </div>
+
             <!-- Enroll Tab -->
-            <div id="enrollTab" class="tab-content active">
+            <div id="enrollTab" class="tab-content">
                 <div class="card">
                     <h3>Enroll in Test Series</h3>
                     <form onsubmit="enrollStudent(event)">
@@ -183,7 +204,7 @@
                     </form>
                 </div>
             </div>
-
+            
             <!-- Apply Tab -->
             <div id="applyTab" class="tab-content">
                 <div class="card">

@@ -133,6 +133,93 @@ function showDashboard() {
     document.getElementById('studentIdDisplay').textContent = currentStudent.StudentID;
     document.getElementById('studentCnic').textContent = currentStudent.cnic;
     document.getElementById('studentBackground').textContent = currentStudent.backgroundName;
+    
+    // Load and display student photo
+    loadStudentPhoto();
+}
+
+// Load student photo
+async function loadStudentPhoto() {
+    try {
+        const response = await fetch(`/api/student/photo/${currentStudent.StudentID}`);
+        if (response.ok) {
+            const blob = await response.blob();
+            const photoUrl = URL.createObjectURL(blob);
+            document.getElementById('studentPhoto').src = photoUrl;
+            document.getElementById('studentPhoto').style.display = 'block';
+            document.getElementById('noPhoto').style.display = 'none';
+        }
+    } catch (error) {
+        // Photo doesn't exist, show placeholder
+        document.getElementById('studentPhoto').style.display = 'none';
+        document.getElementById('noPhoto').style.display = 'block';
+    }
+}
+
+// Preview photo before upload
+document.addEventListener('DOMContentLoaded', () => {
+    const photoInput = document.getElementById('photoInput');
+    if (photoInput) {
+        photoInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                // Check file size
+                if (file.size > 2097152) {
+                    showMessage('Photo size must be less than 2MB', 'error');
+                    this.value = '';
+                    return;
+                }
+                
+                // Show preview
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const preview = document.getElementById('photoPreview');
+                    preview.innerHTML = `
+                        <img src="${e.target.result}" 
+                             style="max-width:200px;max-height:200px;border:2px solid #ddd;border-radius:8px;">
+                    `;
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+    }
+});
+
+// Upload photo
+async function uploadPhoto(e) {
+    e.preventDefault();
+    
+    const fileInput = document.getElementById('photoInput');
+    const file = fileInput.files[0];
+    
+    if (!file) {
+        showMessage('Please select a photo', 'error');
+        return;
+    }
+    
+    const formData = new FormData();
+    formData.append('photo', file);
+    formData.append('studentId', currentStudent.StudentID);
+    
+    try {
+        const response = await fetch('/api/student/upload-photo', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showMessage('Photo uploaded successfully!', 'success');
+            loadStudentPhoto(); // Reload photo
+            fileInput.value = '';
+            document.getElementById('photoPreview').innerHTML = '';
+        } else {
+            showMessage(data.message, 'error');
+        }
+    } catch (error) {
+        showMessage('Photo upload failed. Please try again.', 'error');
+    }
 }
 
 // Logout
@@ -202,10 +289,13 @@ async function loadAvailableDurations() {
         const response = await fetch(`/api/student/durations/${seriesId}/${testTypeId}`);
         const data = await response.json();
         
+        console.log('Duration Response:', data); // Debug log
+        
         if (data.success) {
             const select = document.getElementById('durationSelect');
             if (data.durations.length === 0) {
                 select.innerHTML = '<option value="">No slots available</option>';
+                showMessage('No test slots available for this combination. Check if dates are in the future.', 'error');
             } else {
                 select.innerHTML = '<option value="">Choose date & time</option>' +
                     data.durations.map(d => 
@@ -218,6 +308,7 @@ async function loadAvailableDurations() {
         }
     } catch (error) {
         console.error('Error loading durations:', error);
+        showMessage('Error loading test slots', 'error');
     }
 }
 
